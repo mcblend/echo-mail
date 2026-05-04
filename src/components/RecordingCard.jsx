@@ -16,6 +16,9 @@ export default function RecordingCard({ recording, onDelete, confirmDelete }) {
   const [progress, setProgress] = useState(0)
   const [currentTime, setCurrentTime] = useState(0)
   const audioRef = useRef(null)
+  const rafRef = useRef(null)
+  const playStartWallRef = useRef(null)
+  const playStartAudioRef = useRef(0)
 
   useEffect(() => {
     const audio = new Audio(recording.public_url)
@@ -25,25 +28,38 @@ export default function RecordingCard({ recording, onDelete, confirmDelete }) {
     const getDur = () => (isFinite(audio.duration) && audio.duration > 0)
       ? audio.duration : storedDur
 
-    let raf
+    // Drive progress with wall-clock time — audio.currentTime lags on WebM
+    // files because MediaRecorder doesn't embed duration metadata
     const tick = () => {
       const dur = getDur()
-      setCurrentTime(audio.currentTime)
-      if (dur > 0) setProgress(audio.currentTime / dur)
-      raf = requestAnimationFrame(tick)
+      const wallElapsed = playStartWallRef.current
+        ? (Date.now() - playStartWallRef.current) / 1000
+        : 0
+      const estimated = Math.min(playStartAudioRef.current + wallElapsed, dur)
+      setCurrentTime(estimated)
+      if (dur > 0) setProgress(estimated / dur)
+      rafRef.current = requestAnimationFrame(tick)
     }
 
-    audio.addEventListener('play', () => { raf = requestAnimationFrame(tick) })
-    audio.addEventListener('pause', () => cancelAnimationFrame(raf))
+    audio.addEventListener('play', () => {
+      playStartWallRef.current = Date.now()
+      rafRef.current = requestAnimationFrame(tick)
+    })
+    audio.addEventListener('pause', () => {
+      cancelAnimationFrame(rafRef.current)
+      playStartAudioRef.current = audio.currentTime
+    })
     audio.addEventListener('ended', () => {
-      cancelAnimationFrame(raf)
+      cancelAnimationFrame(rafRef.current)
+      playStartWallRef.current = null
+      playStartAudioRef.current = 0
       setPlaying(false)
       setProgress(0)
       setCurrentTime(0)
     })
 
     return () => {
-      cancelAnimationFrame(raf)
+      cancelAnimationFrame(rafRef.current)
       audio.pause()
       audio.src = ''
     }
@@ -56,6 +72,8 @@ export default function RecordingCard({ recording, onDelete, confirmDelete }) {
       audio.pause()
       setPlaying(false)
     } else {
+      playStartWallRef.current = Date.now()
+      playStartAudioRef.current = audio.currentTime
       audio.play()
       setPlaying(true)
     }
@@ -63,9 +81,15 @@ export default function RecordingCard({ recording, onDelete, confirmDelete }) {
 
   const handleSeek = (ratio) => {
     const audio = audioRef.current
-    if (!audio || !audio.duration) return
-    audio.currentTime = ratio * audio.duration
+    if (!audio) return
+    const dur = (isFinite(audio.duration) && audio.duration > 0)
+      ? audio.duration : Number(recording.duration)
+    const seekTo = ratio * dur
+    audio.currentTime = seekTo
+    playStartWallRef.current = playing ? Date.now() : null
+    playStartAudioRef.current = seekTo
     setProgress(ratio)
+    setCurrentTime(seekTo)
   }
 
   const handleDelete = () => {
