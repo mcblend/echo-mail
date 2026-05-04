@@ -1,0 +1,11 @@
+{
+  "permissions": {
+    "allow": [
+      "PowerShell(Get-Command node -ErrorAction SilentlyContinue; Get-ChildItem \"C:\\\\Program Files\\\\nodejs\" -ErrorAction SilentlyContinue | Select-Object -First 5; Get-ChildItem \"$env:APPDATA\\\\npm\" -ErrorAction SilentlyContinue | Select-Object -First 5; Get-ChildItem \"$env:LOCALAPPDATA\\\\nvm\" -ErrorAction SilentlyContinue | Select-Object -First 5)",
+      "PowerShell(& \"C:\\\\Users\\\\mcble\\\\AppData\\\\Local\\\\ms-playwright-go\\\\1.50.1\\\\node.exe\" --version)",
+      "PowerShell($env:PATH = $env:PATH + \";C:\\\\Program Files\\\\nodejs\"; node --version 2>&1; npm --version 2>&1)",
+      "mcp__Claude_Preview__preview_start",
+      "PowerShell($bytes = [System.IO.File]::ReadAllBytes\\(\"C:\\\\Users\\\\mcble\\\\Claude Code\\\\Echo Mail\\\\dev.cmd\"\\); Write-Host \"First 4 bytes \\(hex\\):\"; \\($bytes | Select-Object -First 4 | ForEach-Object { $_.ToString\\(\"X2\"\\) }\\) -join \" \"; Write-Host \"Content:\"; [System.IO.File]::ReadAllText\\(\"C:\\\\Users\\\\mcble\\\\Claude Code\\\\Echo Mail\\\\dev.cmd\"\\))"
+    ]
+  }
+}

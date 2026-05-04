@@ -1,0 +1,11 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "echo-mail",
+      "runtimeExecutable": "C:\\Users\\mcble\\Claude Code\\Echo Mail\\dev.cmd",
+      "runtimeArgs": [],
+      "port": 5173
+    }
+  ]
+}
