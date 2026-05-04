@@ -21,10 +21,12 @@ const s = {
 export default function Login() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
-  const [mode, setMode] = useState('login')
+  const [mode, setMode] = useState('login') // 'login' | 'signup' | 'forgot'
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [success, setSuccess] = useState('')
+
+  const switchMode = (next) => { setMode(next); setError(''); setSuccess('') }
 
   const handle = async (e) => {
     e.preventDefault()
@@ -35,10 +37,16 @@ export default function Login() {
       if (mode === 'login') {
         const { error } = await supabase.auth.signInWithPassword({ email, password })
         if (error) throw error
-      } else {
+      } else if (mode === 'signup') {
         const { error } = await supabase.auth.signUp({ email, password })
         if (error) throw error
         setSuccess('Check your email to confirm your account.')
+      } else if (mode === 'forgot') {
+        const { error } = await supabase.auth.resetPasswordForEmail(email, {
+          redirectTo: `${window.location.origin}/reset-password`,
+        })
+        if (error) throw error
+        setSuccess('Check your email for a password reset link.')
       }
     } catch (err) {
       setError(err.message)
@@ -46,6 +54,10 @@ export default function Login() {
       setLoading(false)
     }
   }
+
+  const subtitle = mode === 'login' ? 'Sign in to your account'
+    : mode === 'signup' ? 'Create your account'
+    : 'Reset your password'
 
   return (
     <div style={s.page}>
@@ -57,7 +69,7 @@ export default function Login() {
             </div>
           </div>
           <div style={s.logoTitle}>Echo Mail</div>
-          <div style={s.logoSub}>{mode === 'login' ? 'Sign in to your account' : 'Create your account'}</div>
+          <div style={s.logoSub}>{subtitle}</div>
         </div>
 
         {error && <div style={s.error}>{error}</div>}
@@ -74,26 +86,60 @@ export default function Login() {
             required
             autoComplete="email"
           />
-          <label style={s.label}>Password</label>
-          <input
-            style={s.input}
-            type="password"
-            value={password}
-            onChange={e => setPassword(e.target.value)}
-            placeholder="••••••••"
-            required
-            autoComplete={mode === 'login' ? 'current-password' : 'new-password'}
-          />
+
+          {mode !== 'forgot' && (
+            <>
+              <label style={s.label}>Password</label>
+              <input
+                style={s.input}
+                type="password"
+                value={password}
+                onChange={e => setPassword(e.target.value)}
+                placeholder="••••••••"
+                required
+                autoComplete={mode === 'login' ? 'current-password' : 'new-password'}
+              />
+            </>
+          )}
+
           <button style={{ ...s.btn, opacity: loading ? 0.6 : 1 }} type="submit" disabled={loading}>
-            {loading ? 'Please wait…' : mode === 'login' ? 'Sign In' : 'Create Account'}
+            {loading ? 'Please wait…'
+              : mode === 'login' ? 'Sign In'
+              : mode === 'signup' ? 'Create Account'
+              : 'Send Reset Link'}
           </button>
         </form>
 
-        <div style={s.toggle}>
-          <button style={s.toggleLink} onClick={() => { setMode(m => m === 'login' ? 'signup' : 'login'); setError(''); setSuccess('') }}>
-            {mode === 'login' ? "Don't have an account? Sign up" : 'Already have an account? Sign in'}
-          </button>
-        </div>
+        {mode === 'login' && (
+          <>
+            <div style={{ textAlign: 'center', marginBottom: 8 }}>
+              <button style={{ ...s.toggleLink, fontSize: 13, color: '#4a6a8a' }} onClick={() => switchMode('forgot')}>
+                Forgot password?
+              </button>
+            </div>
+            <div style={s.toggle}>
+              <button style={s.toggleLink} onClick={() => switchMode('signup')}>
+                Don't have an account? Sign up
+              </button>
+            </div>
+          </>
+        )}
+
+        {mode === 'signup' && (
+          <div style={s.toggle}>
+            <button style={s.toggleLink} onClick={() => switchMode('login')}>
+              Already have an account? Sign in
+            </button>
+          </div>
+        )}
+
+        {mode === 'forgot' && (
+          <div style={s.toggle}>
+            <button style={s.toggleLink} onClick={() => switchMode('login')}>
+              Back to sign in
+            </button>
+          </div>
+        )}
       </div>
     </div>
   )

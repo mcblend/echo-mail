@@ -6,6 +6,7 @@ import Home from './pages/Home'
 import Recordings from './pages/Recordings'
 import Settings from './pages/Settings'
 import Playback from './pages/Playback'
+import ResetPassword from './pages/ResetPassword'
 
 function ProtectedRoute({ session, children }) {
   if (session === undefined) {
@@ -33,6 +34,7 @@ export default function App() {
       <Routes>
         <Route path="/login" element={session ? <Navigate to="/" replace /> : <Login />} />
         <Route path="/playback/:id" element={<Playback />} />
+        <Route path="/reset-password" element={<ResetPassword />} />
         <Route path="/" element={<ProtectedRoute session={session}><Home /></ProtectedRoute>} />
         <Route path="/recordings" element={<ProtectedRoute session={session}><Recordings /></ProtectedRoute>} />
         <Route path="/settings" element={<ProtectedRoute session={session}><Settings /></ProtectedRoute>} />
