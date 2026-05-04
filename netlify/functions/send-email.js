@@ -45,7 +45,7 @@ export const handler = async (event) => {
           <!-- Header -->
           <tr>
             <td style="padding:32px 32px 24px;text-align:center;border-bottom:1px solid #1e2d40;">
-              <div style="font-size:28px;margin-bottom:8px;">🎙</div>
+              <img src="https://echo-mail.netlify.app/icons/icon-192.png" width="56" height="56" alt="Echo Mail" style="border-radius:50%;display:block;margin:0 auto 12px;" />
               <h1 style="margin:0;font-size:22px;font-weight:700;color:#e2eaf4;letter-spacing:-0.3px;">Echo Mail</h1>
             </td>
           </tr>

@@ -43,9 +43,21 @@ export default function Playback() {
     const audio = new Audio(recording.public_url)
     audioRef.current = audio
 
+    // WebM audio often doesn't expose duration until fully buffered.
+    // Use the stored DB duration as a reliable fallback.
+    const getDur = () => (isFinite(audio.duration) && audio.duration > 0)
+      ? audio.duration
+      : recording.duration
+
     audio.addEventListener('timeupdate', () => {
+      const dur = getDur()
       setCurrentTime(audio.currentTime)
-      setProgress(audio.duration ? audio.currentTime / audio.duration : 0)
+      setProgress(dur ? audio.currentTime / dur : 0)
+    })
+    audio.addEventListener('durationchange', () => {
+      // Re-compute progress when duration finally resolves
+      const dur = getDur()
+      setProgress(dur ? audio.currentTime / dur : 0)
     })
     audio.addEventListener('ended', () => {
       setPlaying(false)

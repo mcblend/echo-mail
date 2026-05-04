@@ -21,9 +21,18 @@ export default function RecordingCard({ recording, onDelete, confirmDelete }) {
     const audio = new Audio(recording.public_url)
     audioRef.current = audio
 
+    const getDur = () => (isFinite(audio.duration) && audio.duration > 0)
+      ? audio.duration
+      : recording.duration
+
     audio.addEventListener('timeupdate', () => {
+      const dur = getDur()
       setCurrentTime(audio.currentTime)
-      setProgress(audio.duration ? audio.currentTime / audio.duration : 0)
+      setProgress(dur ? audio.currentTime / dur : 0)
+    })
+    audio.addEventListener('durationchange', () => {
+      const dur = getDur()
+      setProgress(dur ? audio.currentTime / dur : 0)
     })
     audio.addEventListener('ended', () => {
       setPlaying(false)
