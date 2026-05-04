@@ -210,7 +210,7 @@ export default function Home() {
         )}
         {status === 'done' && (
           <div style={{ background: '#0d2b1a', border: '1px solid #1a4a2a', borderRadius: 10, padding: '12px 20px', marginBottom: 32, fontSize: 14, color: '#4ade80' }}>
-            ✓ Saved and email sent{profile?.destination_email ? ` to ${profile.destination_email}` : ''}
+            ✓ Recording saved and email sent
           </div>
         )}
         {(status === 'error' || errorMsg) && (
