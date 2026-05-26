@@ -43,7 +43,7 @@ export async function onRequestPost(context) {
         <table width="100%" cellpadding="0" cellspacing="0" style="max-width:520px;background:#131c2b;border-radius:16px;border:1px solid #1e2d40;overflow:hidden;">
           <tr>
             <td style="padding:32px 32px 24px;text-align:center;border-bottom:1px solid #1e2d40;">
-              <img src="https://echo-mail.pages.dev/icons/icon-192.png" width="56" height="56" alt="Echo Mail" style="border-radius:50%;display:block;margin:0 auto 12px;" />
+              <img src="https://echo-mail.cc/icons/icon-192.png" width="56" height="56" alt="Echo Mail" style="border-radius:50%;display:block;margin:0 auto 12px;" />
               <h1 style="margin:0;font-size:22px;font-weight:700;color:#e2eaf4;letter-spacing:-0.3px;">Echo Mail</h1>
             </td>
           </tr>
