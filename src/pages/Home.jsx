@@ -143,7 +143,7 @@ export default function Home() {
       const playbackUrl = `${appUrl}/playback/${recording.id}`
 
       if (profile?.destination_email) {
-        await fetch('/.netlify/functions/send-email', {
+        await fetch('/api/send-email', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
