@@ -23,8 +23,8 @@ jobs:
         env:
           VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
           VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
-          VITE_APP_URL: https://echo-mail.cc
-          VITE_PLAYBACK_URL: https://echo-mail.pages.dev
+          VITE_APP_URL: https://echo-mail.app
+          VITE_PLAYBACK_URL: https://echo-mail.app
 
       - name: Deploy to Cloudflare Pages
         run: npx wrangler pages deploy dist --project-name echo-mail --branch main
