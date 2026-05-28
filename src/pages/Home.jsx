@@ -130,7 +130,7 @@ export default function Home() {
       const { data: { user } } = await supabase.auth.getUser()
       const { path, publicUrl } = await uploadAudio(user.id, blob, filename)
 
-      const appUrl = import.meta.env.VITE_APP_URL || window.location.origin
+      const appUrl = import.meta.env.VITE_PLAYBACK_URL || import.meta.env.VITE_APP_URL || window.location.origin
       const recording = await insertRecording({
         user_id: user.id,
         title,
