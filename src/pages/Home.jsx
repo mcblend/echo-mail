@@ -37,6 +37,7 @@ export default function Home() {
       try {
         const p = await getProfile(uid)
         setProfile(p)
+        if (p?.auto_start_recording) startRecording()
       } catch {
         // Profile may not have been created by trigger — create it now
         try {

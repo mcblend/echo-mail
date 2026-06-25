@@ -11,6 +11,8 @@ CREATE TABLE IF NOT EXISTS profiles (
   confirm_before_delete BOOLEAN NOT NULL DEFAULT FALSE,
   keep_screen_awake BOOLEAN NOT NULL DEFAULT TRUE,
   max_recording_length INTEGER NOT NULL DEFAULT 5,
+  auto_delete_days INTEGER,
+  auto_start_recording BOOLEAN NOT NULL DEFAULT FALSE,
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );

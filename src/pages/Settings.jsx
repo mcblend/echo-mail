@@ -169,6 +169,25 @@ export default function Settings() {
             right={<Toggle checked={profile?.confirm_before_delete ?? false} onChange={v => update({ confirm_before_delete: v })} />} />
           <Row label="Keep screen awake" sublabel="Prevent sleep while recording"
             right={<Toggle checked={profile?.keep_screen_awake ?? true} onChange={v => update({ keep_screen_awake: v })} />} />
+          <Row label="Auto-start recording" sublabel="Begin recording immediately on launch"
+            right={<Toggle checked={profile?.auto_start_recording ?? false} onChange={v => update({ auto_start_recording: v })} />} />
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '16px 0', borderBottom: '1px solid #1e2d40' }}>
+            <div>
+              <div style={{ fontSize: 15, color: '#e2eaf4' }}>Auto-delete recordings</div>
+              <div style={{ fontSize: 12, color: '#4a6a8a', marginTop: 3 }}>Remove recordings older than</div>
+            </div>
+            <select
+              value={profile?.auto_delete_days ?? ''}
+              onChange={e => update({ auto_delete_days: e.target.value === '' ? null : Number(e.target.value) })}
+              style={{ background: '#1a2f47', border: '1px solid #1e2d40', borderRadius: 8, color: '#e2eaf4', fontSize: 14, padding: '6px 10px', cursor: 'pointer', outline: 'none' }}
+            >
+              <option value="">Off</option>
+              <option value="7">7 days</option>
+              <option value="14">14 days</option>
+              <option value="30">30 days</option>
+              <option value="90">90 days</option>
+            </select>
+          </div>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '16px 0' }}>
             <div>
               <div style={{ fontSize: 15, color: '#e2eaf4' }}>Max recording length</div>
@@ -211,7 +230,7 @@ export default function Settings() {
             </div>
             <div>
               <div style={{ fontSize: 14, color: '#e2eaf4', fontWeight: 600, marginBottom: 4 }}>Recordings are secured</div>
-              <div style={{ fontSize: 13, color: '#4a6a8a', lineHeight: 1.5 }}>Audio files are stored privately. Playback links use unguessable IDs.</div>
+              <div style={{ fontSize: 13, color: '#4a6a8a', lineHeight: 1.5 }}>Audio files are stored privately. Playback links use encrypted IDs.</div>
             </div>
           </div>
         </div>
