@@ -243,36 +243,36 @@ export default function Home() {
       </div>
 
       {/* Main content */}
-      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'flex-start', padding: '140px 24px 40px' }}>
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'flex-start', padding: '200px 24px 40px', position: 'relative' }}>
 
-        {/* Status / error messages */}
-        {status === 'saving' && (
-          <div style={{ background: '#1a2332', border: '1px solid #1e2d40', borderRadius: 10, padding: '12px 20px', marginBottom: 32, fontSize: 14, color: '#7ab0e0', display: 'flex', alignItems: 'center', gap: 10 }}>
-            <div style={{ width: 14, height: 14, border: '2px solid #1e2d40', borderTopColor: '#7ab0e0', borderRadius: '50%', animation: 'spin 0.8s linear infinite', flexShrink: 0 }} />
-            <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
-            Saving and sending…
-          </div>
-        )}
-        {status === 'done' && (
-          <div style={{ background: '#0d2b1a', border: '1px solid #1a4a2a', borderRadius: 10, padding: '12px 20px', marginBottom: 32, fontSize: 14, color: '#4ade80' }}>
-            ✓ Recording saved and email sent
-          </div>
-        )}
-        {(status === 'error' || errorMsg) && (
-          <div style={{ background: '#2a1a1a', border: '1px solid #c0392b', borderRadius: 10, padding: '12px 20px', marginBottom: 32, fontSize: 14, color: '#e07070', maxWidth: 320, textAlign: 'center' }}>
-            {errorMsg}
-          </div>
-        )}
-
-        {/* No email warning */}
-        {!profile?.destination_email && status === 'idle' && !errorMsg && (
-          <div
-            onClick={() => navigate('/settings')}
-            style={{ background: '#1a1a2a', border: '1px solid #2a2a4a', borderRadius: 10, padding: '12px 20px', marginBottom: 32, fontSize: 13, color: '#4a6a8a', cursor: 'pointer', textAlign: 'center' }}
-          >
-            ⚠ No destination email set — tap to go to Settings
-          </div>
-        )}
+        {/* Status / error messages — float in the padding area, no layout shift */}
+        <div style={{ position: 'absolute', top: 60, left: 24, right: 24, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8 }}>
+          {status === 'saving' && (
+            <div style={{ background: '#1a2332', border: '1px solid #1e2d40', borderRadius: 10, padding: '12px 20px', fontSize: 14, color: '#7ab0e0', display: 'flex', alignItems: 'center', gap: 10 }}>
+              <div style={{ width: 14, height: 14, border: '2px solid #1e2d40', borderTopColor: '#7ab0e0', borderRadius: '50%', animation: 'spin 0.8s linear infinite', flexShrink: 0 }} />
+              <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+              Saving and sending…
+            </div>
+          )}
+          {status === 'done' && (
+            <div style={{ background: '#0d2b1a', border: '1px solid #1a4a2a', borderRadius: 10, padding: '12px 20px', fontSize: 14, color: '#4ade80' }}>
+              ✓ Recording saved and email sent
+            </div>
+          )}
+          {(status === 'error' || errorMsg) && (
+            <div style={{ background: '#2a1a1a', border: '1px solid #c0392b', borderRadius: 10, padding: '12px 20px', fontSize: 14, color: '#e07070', maxWidth: 320, textAlign: 'center' }}>
+              {errorMsg}
+            </div>
+          )}
+          {!profile?.destination_email && status === 'idle' && !errorMsg && (
+            <div
+              onClick={() => navigate('/settings')}
+              style={{ background: '#1a1a2a', border: '1px solid #2a2a4a', borderRadius: 10, padding: '12px 20px', fontSize: 13, color: '#4a6a8a', cursor: 'pointer', textAlign: 'center' }}
+            >
+              ⚠ No destination email set — tap to go to Settings
+            </div>
+          )}
+        </div>
 
         {/* Timer */}
         <div style={{ fontSize: 48, fontWeight: 200, color: isRecording ? '#c0392b' : '#1e2d40', fontVariantNumeric: 'tabular-nums', letterSpacing: 2, marginBottom: 16, transition: 'color 0.3s', minWidth: 130, textAlign: 'center' }}>
