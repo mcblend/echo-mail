@@ -416,7 +416,7 @@ export default function Home() {
 
         {/* Label */}
         <p style={{ fontSize: 14, color: '#4a6a8a', textAlign: 'center', letterSpacing: 0.2 }}>
-          {isPaused ? 'Paused — tap ▶ to resume' : isRecording ? 'Recording… tap to stop and send' : 'Tap to start recording'}
+          {isPaused ? 'Paused — tap ▶ to resume' : isRecording ? 'Recording… tap to stop to send' : 'Tap to start recording'}
         </p>
       </div>
     </div>
