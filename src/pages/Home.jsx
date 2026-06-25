@@ -19,6 +19,7 @@ export default function Home() {
   const [session, setSession] = useState(null)
   const [profile, setProfile] = useState(null)
   const [isRecording, setIsRecording] = useState(false)
+  const [isPaused, setIsPaused] = useState(false)
   const [elapsed, setElapsed] = useState(0)
   const [status, setStatus] = useState('idle') // idle | saving | done | error
   const [errorMsg, setErrorMsg] = useState('')
@@ -61,14 +62,16 @@ export default function Home() {
     wakeLockRef.current = null
   }
 
+  const pausedElapsedRef = useRef(0)
+  const pauseStartRef = useRef(null)
+
   const startTimer = () => {
     startTimeRef.current = Date.now()
+    pausedElapsedRef.current = 0
     setElapsed(0)
     timerRef.current = setInterval(() => {
-      const sec = Math.floor((Date.now() - startTimeRef.current) / 1000)
+      const sec = Math.floor((Date.now() - startTimeRef.current) / 1000) + pausedElapsedRef.current
       setElapsed(sec)
-
-      // Auto-stop at max recording length
       if (profile?.max_recording_length && sec >= profile.max_recording_length * 60) {
         stopAndSend()
       }
@@ -78,6 +81,46 @@ export default function Home() {
   const stopTimer = () => {
     clearInterval(timerRef.current)
     timerRef.current = null
+  }
+
+  const pauseRecording = () => {
+    if (!mediaRecorderRef.current || mediaRecorderRef.current.state !== 'recording') return
+    mediaRecorderRef.current.pause()
+    stopTimer()
+    pauseStartRef.current = Date.now()
+    setIsPaused(true)
+  }
+
+  const resumeRecording = () => {
+    if (!mediaRecorderRef.current || mediaRecorderRef.current.state !== 'paused') return
+    mediaRecorderRef.current.resume()
+    // Carry forward elapsed time accrued before this pause
+    pausedElapsedRef.current = elapsed
+    startTimeRef.current = Date.now()
+    pauseStartRef.current = null
+    setIsPaused(false)
+    timerRef.current = setInterval(() => {
+      const sec = Math.floor((Date.now() - startTimeRef.current) / 1000) + pausedElapsedRef.current
+      setElapsed(sec)
+      if (profile?.max_recording_length && sec >= profile.max_recording_length * 60) {
+        stopAndSend()
+      }
+    }, 1000)
+  }
+
+  const discardRecording = () => {
+    if (!mediaRecorderRef.current) return
+    stopTimer()
+    releaseWakeLock()
+    const recorder = mediaRecorderRef.current
+    recorder.addEventListener('stop', () => {}, { once: true })
+    if (recorder.state !== 'inactive') recorder.stop()
+    chunksRef.current = []
+    mediaRecorderRef.current = null
+    setIsRecording(false)
+    setIsPaused(false)
+    setElapsed(0)
+    setStatus('idle')
   }
 
   const startRecording = async () => {
@@ -110,6 +153,7 @@ export default function Home() {
     stopTimer()
     releaseWakeLock()
     setIsRecording(false)
+    setIsPaused(false)
 
     const duration = elapsed || Math.floor((Date.now() - startTimeRef.current) / 1000)
     setStatus('saving')
@@ -199,7 +243,7 @@ export default function Home() {
       </div>
 
       {/* Main content */}
-      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '40px 24px' }}>
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'flex-start', padding: '140px 24px 40px' }}>
 
         {/* Status / error messages */}
         {status === 'saving' && (
@@ -237,12 +281,12 @@ export default function Home() {
 
         {/* Waveform */}
         <div style={{ width: '100%', maxWidth: 280, marginBottom: 40 }}>
-          <LiveWaveform active={isRecording} />
+          <LiveWaveform active={isRecording && !isPaused} />
         </div>
 
         {/* Mic button with pulse rings */}
         <div style={{ position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 32 }}>
-          {isRecording && (
+          {isRecording && !isPaused && (
             <>
               <div style={{ position: 'absolute', width: 100, height: 100, borderRadius: '50%', background: '#c0392b', opacity: 0.15, animation: 'pulse-ring 1.2s ease-out infinite' }} />
               <div style={{ position: 'absolute', width: 100, height: 100, borderRadius: '50%', background: '#c0392b', opacity: 0.1, animation: 'pulse-ring2 1.2s ease-out 0.3s infinite' }} />
@@ -283,9 +327,69 @@ export default function Home() {
           </div>
         </div>
 
+        {/* Pause & Discard row — only visible while recording or paused */}
+        {(isRecording || isPaused) && (
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%', maxWidth: 320, marginBottom: 24, marginTop: 8 }}>
+
+            {/* Pause / Resume */}
+            <div
+              onClick={isPaused ? resumeRecording : pauseRecording}
+              style={{
+                width: 64, height: 64, borderRadius: '50%',
+                background: isPaused ? '#0d2040' : '#1a2f47',
+                border: `2px solid ${isPaused ? '#7ab0e0' : '#1e2d40'}`,
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                cursor: 'pointer', userSelect: 'none',
+                WebkitTapHighlightColor: 'transparent',
+                boxShadow: isPaused ? '0 0 0 6px rgba(122,176,224,0.2)' : 'none',
+                animation: isPaused ? 'pause-pulse 1.4s ease-in-out infinite' : 'none',
+              }}
+            >
+              {isPaused ? (
+                <svg width="26" height="26" viewBox="0 0 24 24" fill="#7ab0e0">
+                  <polygon points="5,3 19,12 5,21" />
+                </svg>
+              ) : (
+                <svg width="26" height="26" viewBox="0 0 24 24" fill="#7ab0e0">
+                  <rect x="5" y="4" width="4" height="16" rx="1" />
+                  <rect x="15" y="4" width="4" height="16" rx="1" />
+                </svg>
+              )}
+            </div>
+
+            {/* Discard */}
+            <div
+              onClick={discardRecording}
+              style={{
+                width: 64, height: 64, borderRadius: '50%',
+                background: '#1a1a2a',
+                border: '2px solid #2a1a1a',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                cursor: 'pointer', userSelect: 'none',
+                WebkitTapHighlightColor: 'transparent',
+              }}
+            >
+              <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#c0392b" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <polyline points="3 6 5 6 21 6" />
+                <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" />
+                <path d="M10 11v6" />
+                <path d="M14 11v6" />
+                <path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2" />
+              </svg>
+            </div>
+          </div>
+        )}
+
+        <style>{`
+          @keyframes pause-pulse {
+            0%, 100% { box-shadow: 0 0 0 4px rgba(122,176,224,0.2); }
+            50% { box-shadow: 0 0 0 10px rgba(122,176,224,0.05); }
+          }
+        `}</style>
+
         {/* Label */}
         <p style={{ fontSize: 14, color: '#4a6a8a', textAlign: 'center', letterSpacing: 0.2 }}>
-          {isRecording ? 'Recording… tap to stop and send' : 'Tap to start recording'}
+          {isPaused ? 'Paused — tap ▶ to resume' : isRecording ? 'Recording… tap to stop and send' : 'Tap to start recording'}
         </p>
       </div>
     </div>
