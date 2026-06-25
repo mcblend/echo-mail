@@ -29,6 +29,8 @@ export default function Home() {
   const timerRef = useRef(null)
   const wakeLockRef = useRef(null)
   const startTimeRef = useRef(null)
+  const profileRef = useRef(null)
+  const isRecordingRef = useRef(false)
 
   useEffect(() => {
     supabase.auth.getSession().then(async ({ data }) => {
@@ -48,10 +50,31 @@ export default function Home() {
     })
   }, [])
 
-  // Trigger auto-start once profile loads and confirms the setting is on
+  // Keep refs in sync so visibility handler always has current values
+  useEffect(() => { profileRef.current = profile }, [profile])
+  useEffect(() => { isRecordingRef.current = isRecording }, [isRecording])
+
+  // Auto-start when profile first loads
   useEffect(() => {
-    if (profile?.auto_start_recording) startRecording()
-  }, [profile?.auto_start_recording])
+    if (profile?.auto_start_recording && !isRecordingRef.current) {
+      startRecording()
+    }
+  }, [profile])
+
+  // Auto-start when app returns to foreground (e.g. switching back from another app)
+  useEffect(() => {
+    const handleVisibility = () => {
+      if (
+        document.visibilityState === 'visible' &&
+        profileRef.current?.auto_start_recording &&
+        !isRecordingRef.current
+      ) {
+        startRecording()
+      }
+    }
+    document.addEventListener('visibilitychange', handleVisibility)
+    return () => document.removeEventListener('visibilitychange', handleVisibility)
+  }, [])
 
   const requestWakeLock = async () => {
     if ('wakeLock' in navigator && profile?.keep_screen_awake !== false) {
