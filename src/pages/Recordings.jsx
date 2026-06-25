@@ -10,7 +10,6 @@ export default function Recordings() {
   const [profile, setProfile] = useState(null)
   const [loading, setLoading] = useState(true)
   const [userId, setUserId] = useState(null)
-
   useEffect(() => {
     supabase.auth.getSession().then(async ({ data }) => {
       if (!data.session) return
@@ -20,18 +19,7 @@ export default function Recordings() {
         getRecordings(uid).catch(() => []),
         getProfile(uid).catch(() => null),
       ])
-
-      let filtered = recs
-      if (prof?.auto_delete_days) {
-        const cutoff = new Date(Date.now() - prof.auto_delete_days * 86400000)
-        const stale = recs.filter(r => new Date(r.created_at) < cutoff)
-        if (stale.length > 0) {
-          await Promise.allSettled(stale.map(r => deleteRecording(r.id, uid)))
-          filtered = recs.filter(r => new Date(r.created_at) >= cutoff)
-        }
-      }
-
-      setRecordings(filtered)
+      setRecordings(recs)
       setProfile(prof)
       setLoading(false)
     })

@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { supabase, getProfile, upsertProfile } from '../lib/supabase'
+import { supabase, getProfile, upsertProfile, getRecordings, deleteRecording } from '../lib/supabase'
 
 function Toggle({ checked, onChange }) {
   return (
@@ -59,6 +59,10 @@ export default function Settings() {
   const [pwMsg, setPwMsg] = useState('')
   const [pwError, setPwError] = useState('')
 
+  // Auto-delete confirmation
+  const [autoDeleteModal, setAutoDeleteModal] = useState(null) // { days, stale }
+  const [autoDeleting, setAutoDeleting] = useState(false)
+
   // Delete account
   const [showDeleteModal, setShowDeleteModal] = useState(false)
   const [deleteInput, setDeleteInput] = useState('')
@@ -84,6 +88,30 @@ export default function Settings() {
     const merged = { ...profile, ...patch }
     setProfile(merged)
     try { await upsertProfile(userId, patch) } catch (err) { console.error(err) }
+  }
+
+  const handleAutoDeleteChange = async (days) => {
+    if (!days) {
+      update({ auto_delete_days: null })
+      return
+    }
+    const recs = await getRecordings(userId).catch(() => [])
+    const cutoff = new Date(Date.now() - days * 86400000)
+    const stale = recs.filter(r => new Date(r.created_at) < cutoff)
+    if (stale.length > 0) {
+      setAutoDeleteModal({ days, stale })
+    } else {
+      update({ auto_delete_days: days })
+    }
+  }
+
+  const confirmAutoDelete = async () => {
+    if (!autoDeleteModal) return
+    setAutoDeleting(true)
+    await Promise.allSettled(autoDeleteModal.stale.map(r => deleteRecording(r.id, userId)))
+    update({ auto_delete_days: autoDeleteModal.days })
+    setAutoDeleteModal(null)
+    setAutoDeleting(false)
   }
 
   const saveEmail = async () => {
@@ -178,7 +206,7 @@ export default function Settings() {
             </div>
             <select
               value={profile?.auto_delete_days ?? ''}
-              onChange={e => update({ auto_delete_days: e.target.value === '' ? null : Number(e.target.value) })}
+              onChange={e => handleAutoDeleteChange(e.target.value === '' ? null : Number(e.target.value))}
               style={{ background: '#1a2f47', border: '1px solid #1e2d40', borderRadius: 8, color: '#e2eaf4', fontSize: 14, padding: '6px 10px', cursor: 'pointer', outline: 'none' }}
             >
               <option value="">Off</option>
@@ -247,6 +275,28 @@ export default function Settings() {
           Delete Account
         </div>
       </div>
+
+      {/* Auto-delete confirmation modal */}
+      {autoDeleteModal && (
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.7)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24, zIndex: 100 }}>
+          <div style={{ background: '#131c2b', border: '1px solid #1e2d40', borderRadius: 14, padding: 28, width: '100%', maxWidth: 360 }}>
+            <div style={{ fontSize: 18, fontWeight: 700, color: '#e2eaf4', marginBottom: 8 }}>Auto-delete recordings</div>
+            <div style={{ fontSize: 14, color: '#4a6a8a', lineHeight: 1.6, marginBottom: 24 }}>
+              <span style={{ color: '#e2eaf4', fontWeight: 600 }}>{autoDeleteModal.stale.length} recording{autoDeleteModal.stale.length !== 1 ? 's' : ''}</span> older than {autoDeleteModal.days} days will be permanently deleted. This cannot be undone.
+            </div>
+            <div style={{ display: 'flex', gap: 10 }}>
+              <div onClick={() => setAutoDeleteModal(null)}
+                style={{ flex: 1, padding: '13px', background: '#1a2332', color: '#7ab0e0', borderRadius: 10, fontSize: 15, fontWeight: 600, cursor: 'pointer', textAlign: 'center', userSelect: 'none' }}>
+                Cancel
+              </div>
+              <div onClick={confirmAutoDelete}
+                style={{ flex: 1, padding: '13px', background: autoDeleting ? '#2a1a1a' : '#c0392b', color: '#fff', borderRadius: 10, fontSize: 15, fontWeight: 600, cursor: autoDeleting ? 'default' : 'pointer', textAlign: 'center', userSelect: 'none', opacity: autoDeleting ? 0.7 : 1 }}>
+                {autoDeleting ? 'Deleting…' : 'Delete'}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Delete account modal */}
       {showDeleteModal && (

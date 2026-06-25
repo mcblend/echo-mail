@@ -38,7 +38,6 @@ export default function Home() {
       try {
         const p = await getProfile(uid)
         setProfile(p)
-        if (p?.auto_start_recording) startRecording()
       } catch {
         // Profile may not have been created by trigger — create it now
         try {
@@ -48,6 +47,11 @@ export default function Home() {
       }
     })
   }, [])
+
+  // Trigger auto-start once profile loads and confirms the setting is on
+  useEffect(() => {
+    if (profile?.auto_start_recording) startRecording()
+  }, [profile?.auto_start_recording])
 
   const requestWakeLock = async () => {
     if ('wakeLock' in navigator && profile?.keep_screen_awake !== false) {
