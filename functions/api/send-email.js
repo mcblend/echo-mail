@@ -27,7 +27,13 @@ export async function onRequestPost(context) {
     })
   }
 
-  const supabase = createClient(env.SUPABASE_URL, env.SUPABASE_ANON_KEY)
+  // Pass the JWT as the client's auth header so the subsequent .from()
+  // queries below run as this user and satisfy RLS (auth.uid() = user_id) —
+  // auth.getUser(jwt) alone only validates the token, it doesn't attach it
+  // to later requests made by this client.
+  const supabase = createClient(env.SUPABASE_URL, env.SUPABASE_ANON_KEY, {
+    global: { headers: { Authorization: `Bearer ${jwt}` } },
+  })
   const { data: { user }, error: userError } = await supabase.auth.getUser(jwt)
   if (userError || !user) {
     return new Response(JSON.stringify({ error: 'Invalid session' }), {
