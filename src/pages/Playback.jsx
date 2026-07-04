@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import { useParams } from 'react-router-dom'
-import { getRecordingById } from '../lib/supabase'
+import { getPlaybackRecording } from '../lib/supabase'
 import { StaticWaveform } from '../components/Waveform'
 import { MicIcon } from '../components/MicIcon'
 
@@ -30,7 +30,7 @@ export default function Playback() {
   const playStartAudioRef = useRef(0)
 
   useEffect(() => {
-    getRecordingById(id)
+    getPlaybackRecording(id)
       .then(r => {
         setRecording(r)
         setLoading(false)
@@ -151,9 +151,6 @@ export default function Playback() {
         <div style={{ fontSize: 11, color: '#4a6a8a', textTransform: 'uppercase', letterSpacing: '0.6px', marginBottom: 8 }}>Echo Mail</div>
         <h1 style={{ fontSize: 22, fontWeight: 700, color: '#e2eaf4', letterSpacing: '-0.3px', margin: '0 0 8px' }}>{recording.title}</h1>
         <div style={{ fontSize: 13, color: '#4a6a8a' }}>{formatDate(recording.created_at)}</div>
-        {recording.sent_to_email && (
-          <div style={{ marginTop: 8, fontSize: 12, color: '#4a6a8a' }}>Sent to {recording.sent_to_email}</div>
-        )}
       </div>
 
       {/* Player card */}

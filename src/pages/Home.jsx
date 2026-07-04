@@ -202,7 +202,6 @@ export default function Home() {
       const { data: { user } } = await supabase.auth.getUser()
       const { path, publicUrl } = await uploadAudio(user.id, blob, filename)
 
-      const appUrl = import.meta.env.VITE_PLAYBACK_URL || import.meta.env.VITE_APP_URL || window.location.origin
       const recording = await insertRecording({
         user_id: user.id,
         title,
@@ -212,19 +211,15 @@ export default function Home() {
         sent_to_email: profile?.destination_email || null,
       })
 
-      const playbackUrl = `${appUrl}/playback/${recording.id}`
-
       if (profile?.destination_email) {
+        const { data: { session } } = await supabase.auth.getSession()
         await fetch('/api/send-email', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            to: profile.destination_email,
-            title,
-            duration,
-            playbackUrl,
-            recordingId: recording.id,
-          }),
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${session.access_token}`,
+          },
+          body: JSON.stringify({ recordingId: recording.id }),
         })
       }
 

@@ -21,10 +21,19 @@ export async function onRequestPost(context) {
 
   const adminClient = createClient(env.SUPABASE_URL, env.SUPABASE_SERVICE_ROLE_KEY)
 
-  const { data: files } = await adminClient.storage.from('recordings').list(user.id)
-  if (files?.length) {
+  // list() defaults to a max of 100 entries per call — page through
+  // all of them so accounts with more recordings don't leave orphaned files
+  let offset = 0
+  const pageSize = 100
+  while (true) {
+    const { data: files } = await adminClient.storage
+      .from('recordings')
+      .list(user.id, { limit: pageSize, offset })
+    if (!files?.length) break
     const paths = files.map(f => `${user.id}/${f.name}`)
     await adminClient.storage.from('recordings').remove(paths)
+    if (files.length < pageSize) break
+    offset += pageSize
   }
 
   const { error: deleteError } = await adminClient.auth.admin.deleteUser(user.id)

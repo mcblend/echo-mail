@@ -51,6 +51,17 @@ export async function getRecordingById(id) {
   return data
 }
 
+// Used by the public playback page — goes through a SECURITY DEFINER
+// function that returns only playback-safe columns for one known ID,
+// since recordings has no public SELECT policy (see schema.sql).
+export async function getPlaybackRecording(id) {
+  const { data, error } = await supabase
+    .rpc('get_playback_recording', { recording_id: id })
+    .single()
+  if (error) throw error
+  return data
+}
+
 export async function insertRecording(recording) {
   const { data, error } = await supabase
     .from('recordings')

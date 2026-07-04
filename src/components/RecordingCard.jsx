@@ -20,7 +20,12 @@ export default function RecordingCard({ recording, onDelete, confirmDelete }) {
   const playStartWallRef = useRef(null)
   const playStartAudioRef = useRef(0)
 
-  useEffect(() => {
+  // Audio is created lazily on first play/seek, not on mount — with many
+  // recordings in the list, eagerly creating an <audio> per card fires a
+  // network request for each one immediately, even if never played.
+  const ensureAudio = () => {
+    if (audioRef.current) return audioRef.current
+
     const audio = new Audio(recording.public_url)
     audioRef.current = audio
 
@@ -58,16 +63,21 @@ export default function RecordingCard({ recording, onDelete, confirmDelete }) {
       setCurrentTime(0)
     })
 
+    return audio
+  }
+
+  useEffect(() => {
     return () => {
       cancelAnimationFrame(rafRef.current)
-      audio.pause()
-      audio.src = ''
+      if (audioRef.current) {
+        audioRef.current.pause()
+        audioRef.current.src = ''
+      }
     }
-  }, [recording.public_url])
+  }, [])
 
   const togglePlay = () => {
-    const audio = audioRef.current
-    if (!audio) return
+    const audio = ensureAudio()
     if (playing) {
       audio.pause()
       setPlaying(false)
@@ -80,8 +90,7 @@ export default function RecordingCard({ recording, onDelete, confirmDelete }) {
   }
 
   const handleSeek = (ratio) => {
-    const audio = audioRef.current
-    if (!audio) return
+    const audio = ensureAudio()
     const dur = (isFinite(audio.duration) && audio.duration > 0)
       ? audio.duration : Number(recording.duration)
     const seekTo = ratio * dur

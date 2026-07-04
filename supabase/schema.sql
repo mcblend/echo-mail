@@ -57,9 +57,27 @@ DROP POLICY IF EXISTS "Users can delete own recordings" ON recordings;
 CREATE POLICY "Users can delete own recordings" ON recordings
   FOR DELETE USING (auth.uid() = user_id);
 
+-- No public SELECT policy on recordings — the table itself is only
+-- readable by its owner. Shared playback instead goes through
+-- get_playback_recording() below, which returns only the columns a
+-- recipient needs (not sent_to_email or user_id) for a single known ID.
+-- This prevents enumerating every user's recordings via the anon key.
 DROP POLICY IF EXISTS "Public can read recording by id" ON recordings;
-CREATE POLICY "Public can read recording by id" ON recordings
-  FOR SELECT USING (true);
+
+CREATE OR REPLACE FUNCTION get_playback_recording(recording_id UUID)
+RETURNS TABLE (
+  id UUID,
+  title TEXT,
+  duration NUMERIC,
+  public_url TEXT,
+  created_at TIMESTAMPTZ
+) AS $$
+  SELECT id, title, duration, public_url, created_at
+  FROM recordings
+  WHERE id = recording_id;
+$$ LANGUAGE sql SECURITY DEFINER STABLE;
+
+GRANT EXECUTE ON FUNCTION get_playback_recording(UUID) TO anon, authenticated;
 
 -- Auto-create profile on signup
 CREATE OR REPLACE FUNCTION handle_new_user()

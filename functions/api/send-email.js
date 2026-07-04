@@ -1,4 +1,5 @@
 import { Resend } from 'resend'
+import { createClient } from '@supabase/supabase-js'
 
 function formatDuration(seconds) {
   const m = Math.floor(seconds / 60)
@@ -6,8 +7,33 @@ function formatDuration(seconds) {
   return m > 0 ? `${m}m ${s}s` : `${s}s`
 }
 
+function escapeHtml(str) {
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;')
+}
+
 export async function onRequestPost(context) {
   const { request, env } = context
+
+  const authHeader = request.headers.get('Authorization') || ''
+  const jwt = authHeader.replace('Bearer ', '')
+  if (!jwt) {
+    return new Response(JSON.stringify({ error: 'Unauthorized' }), {
+      status: 401, headers: { 'Content-Type': 'application/json' }
+    })
+  }
+
+  const supabase = createClient(env.SUPABASE_URL, env.SUPABASE_ANON_KEY)
+  const { data: { user }, error: userError } = await supabase.auth.getUser(jwt)
+  if (userError || !user) {
+    return new Response(JSON.stringify({ error: 'Invalid session' }), {
+      status: 401, headers: { 'Content-Type': 'application/json' }
+    })
+  }
 
   let body
   try {
@@ -18,15 +44,44 @@ export async function onRequestPost(context) {
     })
   }
 
-  const { to, title, duration, playbackUrl } = body
-
-  if (!to || !title || !playbackUrl) {
-    return new Response(JSON.stringify({ error: 'Missing required fields' }), {
+  const { recordingId } = body
+  if (!recordingId) {
+    return new Response(JSON.stringify({ error: 'Missing recordingId' }), {
       status: 400, headers: { 'Content-Type': 'application/json' }
     })
   }
 
-  const durationLabel = formatDuration(duration || 0)
+  // Look up the recording and destination email server-side, scoped to
+  // this authenticated user — never trust title/playbackUrl/to from the
+  // client, since that would let an attacker inject arbitrary email content.
+  const { data: recording, error: recError } = await supabase
+    .from('recordings')
+    .select('id, title, duration')
+    .eq('id', recordingId)
+    .eq('user_id', user.id)
+    .single()
+  if (recError || !recording) {
+    return new Response(JSON.stringify({ error: 'Recording not found' }), {
+      status: 404, headers: { 'Content-Type': 'application/json' }
+    })
+  }
+
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('destination_email')
+    .eq('id', user.id)
+    .single()
+  const to = profile?.destination_email
+  if (!to) {
+    return new Response(JSON.stringify({ error: 'No destination email set' }), {
+      status: 400, headers: { 'Content-Type': 'application/json' }
+    })
+  }
+
+  const appUrl = env.VITE_APP_URL || 'https://echo-mail.app'
+  const playbackUrl = `${appUrl}/playback/${recording.id}`
+  const title = escapeHtml(recording.title)
+  const durationLabel = formatDuration(recording.duration || 0)
 
   const html = `
 <!DOCTYPE html>
