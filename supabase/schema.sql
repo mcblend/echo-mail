@@ -96,6 +96,30 @@ CREATE TRIGGER on_auth_user_created
   FOR EACH ROW EXECUTE FUNCTION handle_new_user();
 
 -- ============================================================
+-- Keepalive (called by the echo-mail-keepalive Cloudflare Worker)
+-- Single-row table + a function that writes a timestamp to it, so the
+-- free-tier inactivity pause sees real database activity.
+-- ============================================================
+CREATE TABLE IF NOT EXISTS public.tic (id INT PRIMARY KEY DEFAULT 1);
+INSERT INTO public.tic (id) VALUES (1) ON CONFLICT (id) DO NOTHING;
+ALTER TABLE public.tic ADD COLUMN IF NOT EXISTS last_ping TIMESTAMPTZ;
+ALTER TABLE public.tic ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "Allow anon read access" ON public.tic;
+CREATE POLICY "Allow anon read access" ON public.tic
+  FOR SELECT TO anon USING (true);
+
+CREATE OR REPLACE FUNCTION public.touch_tic()
+RETURNS TIMESTAMPTZ
+LANGUAGE sql SECURITY DEFINER SET search_path = public
+AS $$
+  UPDATE public.tic SET last_ping = now() WHERE id = 1 RETURNING last_ping;
+$$;
+
+REVOKE ALL ON FUNCTION public.touch_tic() FROM PUBLIC, anon, authenticated;
+GRANT EXECUTE ON FUNCTION public.touch_tic() TO anon;
+
+-- ============================================================
 -- Storage bucket — if this fails, create manually:
 -- Storage → New bucket → name: recordings, Public: on
 -- ============================================================
